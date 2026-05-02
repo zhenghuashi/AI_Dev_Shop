@@ -27,7 +27,7 @@ export default function App() {
   };
 
   const handleUpdateProduct = (updatedProduct: Product) => {
-    setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+    setProducts(prevProducts => prevProducts.map(p => p.id === updatedProduct.id ? updatedProduct : p));
   };
 
   const selectedProduct = viewState.type === 'detail' 

@@ -20,7 +20,9 @@ export function AddItemModal({ onClose, onAdd, onUpdate, initialProduct }: AddIt
     price: '',
     tags: '',
     imageUrl: '',
-    galleryImages: [] as string[]
+    galleryImages: [] as string[],
+    features: [] as string[],
+    specs: [] as { key: string; value: string }[]
   });
 
   useEffect(() => {
@@ -31,7 +33,9 @@ export function AddItemModal({ onClose, onAdd, onUpdate, initialProduct }: AddIt
         price: initialProduct.price.toString(),
         tags: initialProduct.tags.join(', '),
         imageUrl: initialProduct.imageUrl,
-        galleryImages: initialProduct.galleryImages || []
+        galleryImages: initialProduct.galleryImages || [],
+        features: initialProduct.features || [],
+        specs: Object.entries(initialProduct.specs || {}).map(([key, value]) => ({ key, value }))
       });
     }
   }, [initialProduct]);
@@ -64,6 +68,34 @@ export function AddItemModal({ onClose, onAdd, onUpdate, initialProduct }: AddIt
     }
   };
 
+  const handleAddFeature = () => {
+    setFormData(prev => ({ ...prev, features: [...prev.features, ''] }));
+  };
+
+  const handleRemoveFeature = (index: number) => {
+    setFormData(prev => ({ ...prev, features: prev.features.filter((_, i) => i !== index) }));
+  };
+
+  const handleFeatureChange = (index: number, value: string) => {
+    const newFeatures = [...formData.features];
+    newFeatures[index] = value;
+    setFormData(prev => ({ ...prev, features: newFeatures }));
+  };
+
+  const handleAddSpec = () => {
+    setFormData(prev => ({ ...prev, specs: [...prev.specs, { key: '', value: '' }] }));
+  };
+
+  const handleRemoveSpec = (index: number) => {
+    setFormData(prev => ({ ...prev, specs: prev.specs.filter((_, i) => i !== index) }));
+  };
+
+  const handleSpecChange = (index: number, field: 'key' | 'value', value: string) => {
+    const newSpecs = [...formData.specs];
+    newSpecs[index] = { ...newSpecs[index], [field]: value };
+    setFormData(prev => ({ ...prev, specs: newSpecs }));
+  };
+
   const handleAddGalleryImage = () => {
     setFormData(prev => ({
       ...prev,
@@ -88,7 +120,6 @@ export function AddItemModal({ onClose, onAdd, onUpdate, initialProduct }: AddIt
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Show loading state if needed, but FileReader is fast for local files
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result as string;
@@ -108,15 +139,22 @@ export function AddItemModal({ onClose, onAdd, onUpdate, initialProduct }: AddIt
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const specsMap: Record<string, string> = {};
+    formData.specs.forEach(s => {
+      if (s.key && s.value) specsMap[s.key] = s.value;
+    });
+
     const productData: Product = {
-      ...(initialProduct || {}),
       id: initialProduct?.id || Math.random().toString(36).substring(7),
       name: formData.name,
       description: formData.description,
       price: parseFloat(formData.price) || 0,
       tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
       imageUrl: formData.imageUrl || `https://picsum.photos/seed/${formData.name.replace(/\s+/g, '')}/800/600`,
-      galleryImages: formData.galleryImages.filter(url => url.trim() !== '')
+      galleryImages: formData.galleryImages.filter(url => url.trim() !== ''),
+      features: formData.features.filter(f => f.trim() !== ''),
+      specs: specsMap
     };
 
     if (isEditing) {
@@ -227,6 +265,80 @@ export function AddItemModal({ onClose, onAdd, onUpdate, initialProduct }: AddIt
                     className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
                   />
                 </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 border-t border-neutral-100 pt-6">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-neutral-400" />
+                <h3 className="font-bold text-sm uppercase tracking-widest text-neutral-400">Features & Specs</h3>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold">Key Features</label>
+                {formData.features.map((feature, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={feature}
+                      onChange={(e) => handleFeatureChange(index, e.target.value)}
+                      className="flex-1 px-4 py-2 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 text-sm"
+                      placeholder="e.g. WiFi 6 support"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveFeature(index)}
+                      className="p-2 text-neutral-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddFeature}
+                  className="w-full py-2 border border-dashed border-neutral-200 rounded-xl text-neutral-500 hover:border-neutral-900 hover:text-neutral-900 transition-all flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add Feature
+                </button>
+              </div>
+
+              <div className="space-y-3 pt-4 border-t border-neutral-50">
+                <label className="block text-sm font-semibold">Technical Specifications</label>
+                {formData.specs.map((spec, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={spec.key}
+                      onChange={(e) => handleSpecChange(index, 'key', e.target.value)}
+                      className="w-1/3 px-3 py-2 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 text-xs font-bold"
+                      placeholder="Property"
+                    />
+                    <input
+                      type="text"
+                      value={spec.value}
+                      onChange={(e) => handleSpecChange(index, 'value', e.target.value)}
+                      className="flex-1 px-3 py-2 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 text-xs"
+                      placeholder="Value"
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => handleRemoveSpec(index)}
+                      className="p-1.5 text-neutral-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={handleAddSpec}
+                  className="w-full py-2 border border-dashed border-neutral-200 rounded-xl text-neutral-500 hover:border-neutral-900 hover:text-neutral-900 transition-all flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add Specification
+                </button>
               </div>
             </div>
 
