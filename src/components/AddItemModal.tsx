@@ -84,6 +84,28 @@ export function AddItemModal({ onClose, onAdd, onUpdate, initialProduct }: AddIt
     setFormData(prev => ({ ...prev, galleryImages: newGallery }));
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'main' | number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Show loading state if needed, but FileReader is fast for local files
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      if (target === 'main') {
+        setFormData(prev => ({ ...prev, imageUrl: base64String }));
+      } else {
+        const newGallery = [...formData.galleryImages];
+        newGallery[target] = base64String;
+        setFormData(prev => ({ ...prev, galleryImages: newGallery }));
+      }
+    };
+    reader.onerror = () => {
+      alert('Failed to read file. Please try a different image.');
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const productData: Product = {
@@ -214,32 +236,86 @@ export function AddItemModal({ onClose, onAdd, onUpdate, initialProduct }: AddIt
                 <h3 className="font-bold text-sm uppercase tracking-widest text-neutral-400">Photos Management</h3>
               </div>
               
-              <div>
-                <label className="block text-sm font-semibold mb-1.5">Main Image URL</label>
-                <input
-                  type="text"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
-                  className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
-                  placeholder="https://..."
-                />
+              <div className="space-y-2">
+                <label className="block text-sm font-semibold">Main Image</label>
+                <div className="flex gap-2">
+                  <div className="flex-1 space-y-2">
+                    <input
+                      type="text"
+                      value={formData.imageUrl}
+                      onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                      className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 text-sm"
+                      placeholder="Image URL (e.g. https://...)"
+                    />
+                    <div className="flex items-center gap-2">
+                      <label className="flex-1 cursor-pointer">
+                        <div className="btn-secondary py-2 justify-center text-xs border-dashed border-2">
+                          <Plus className="w-3 h-3" />
+                          Upload from PC
+                        </div>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={(e) => handleFileUpload(e, 'main')}
+                        />
+                      </label>
+                      {formData.imageUrl && (
+                        <button 
+                          type="button"
+                          onClick={() => setFormData({...formData, imageUrl: ''})}
+                          className="text-xs text-red-500 font-medium hover:underline px-2"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {formData.imageUrl && (
+                    <div className="w-20 h-20 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-200 flex-shrink-0">
+                      <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-3">
-                <label className="block text-sm font-semibold">Gallery Images</label>
+                <div className="flex justify-between items-center">
+                  <label className="block text-sm font-semibold">Gallery Images</label>
+                  <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Max 5 suggested</span>
+                </div>
                 {formData.galleryImages.map((url, index) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={url}
-                      onChange={(e) => handleGalleryImageChange(index, e.target.value)}
-                      className="flex-1 px-4 py-2 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
-                      placeholder="Gallery image URL"
-                    />
+                  <div key={index} className="flex gap-2 items-start bg-neutral-50 p-3 rounded-2xl border border-neutral-100">
+                    <div className="flex-1 space-y-2">
+                      <input
+                        type="text"
+                        value={url}
+                        onChange={(e) => handleGalleryImageChange(index, e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 text-xs"
+                        placeholder="Gallery URL"
+                      />
+                      <label className="block cursor-pointer">
+                        <div className="flex items-center justify-center gap-2 py-1.5 border border-dashed border-neutral-300 rounded-lg text-[10px] font-bold text-neutral-500 hover:border-neutral-900 hover:text-neutral-900 transition-all">
+                          <Plus className="w-3 h-3" />
+                          UPLOAD FROM PC
+                        </div>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={(e) => handleFileUpload(e, index)}
+                        />
+                      </label>
+                    </div>
+                    {url && (
+                      <div className="w-12 h-12 rounded-lg overflow-hidden border border-neutral-200 bg-white">
+                        <img src={url} alt="Gallery Preview" className="w-full h-full object-cover" />
+                      </div>
+                    )}
                     <button 
                       type="button"
                       onClick={() => handleRemoveGalleryImage(index)}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-1.5 text-neutral-400 hover:text-red-500 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
