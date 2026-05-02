@@ -5,6 +5,10 @@ export interface Product {
   price: number;
   tags: string[];
   imageUrl: string;
+  longDescription?: string;
+  features?: string[];
+  specs?: Record<string, string>;
+  galleryImages?: string[];
 }
 
 export type ViewState = {

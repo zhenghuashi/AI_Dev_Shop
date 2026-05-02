@@ -15,7 +15,7 @@ import { Product, ViewState } from './types';
 export default function App() {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [viewState, setViewState] = useState<ViewState>({ type: 'catalog' });
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<{ open: boolean; product?: Product }>({ open: false });
 
   const handleProductClick = (id: string) => {
     setViewState({ type: 'detail', productId: id });
@@ -26,6 +26,10 @@ export default function App() {
     setProducts([newProduct, ...products]);
   };
 
+  const handleUpdateProduct = (updatedProduct: Product) => {
+    setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+  };
+
   const selectedProduct = viewState.type === 'detail' 
     ? products.find(p => p.id === viewState.productId) 
     : null;
@@ -33,7 +37,7 @@ export default function App() {
   return (
     <div className="min-h-screen font-sans selection:bg-neutral-900 selection:text-white">
       <Navbar 
-        onAddClick={() => setIsAddModalOpen(true)} 
+        onAddClick={() => setModalMode({ open: true })} 
         onHomeClick={() => setViewState({ type: 'catalog' })} 
       />
 
@@ -76,6 +80,7 @@ export default function App() {
                 <ProductDetail 
                   product={selectedProduct} 
                   onBack={() => setViewState({ type: 'catalog' })} 
+                  onEdit={() => setModalMode({ open: true, product: selectedProduct })}
                 />
               ) : (
                 <div className="py-20 text-center">
@@ -94,10 +99,12 @@ export default function App() {
       </main>
 
       <AnimatePresence>
-        {isAddModalOpen && (
+        {modalMode.open && (
           <AddItemModal 
-            onClose={() => setIsAddModalOpen(false)} 
+            onClose={() => setModalMode({ open: false })} 
             onAdd={handleAddProduct}
+            onUpdate={handleUpdateProduct}
+            initialProduct={modalMode.product}
           />
         )}
       </AnimatePresence>
